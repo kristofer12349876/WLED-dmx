@@ -1,0 +1,37 @@
+name: Build WLED DMX
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Aircoookie/WLED
+          ref: 'v16.0.1' # <-- DIESE ZEILE HOLT DIE STABLE VERSION 16!
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Prepare Web UI
+        run: |
+          npm ci || true
+          npm run build || true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Compile Firmware
+        run: pio run -e esp32_eth
+        env:
+          PLATFORMIO_BUILD_FLAGS: "-D WLED_ENABLE_DMX -D WLED_DISABLE_AUDIO"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WLED_DMX_ETH
+          path: .pio/build/esp32_eth/firmware.bin
